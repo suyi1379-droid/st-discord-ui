@@ -12,6 +12,8 @@ const state = {
     selectedChid: null,
     characterRefreshTimer: 0,
     characterPanelOpen: false,
+    promptLocked: null,
+    promptLockTimer: 0,
 };
 
 const PANELS = {
@@ -189,6 +191,10 @@ function bindSillyTavernEvents() {
         on(name, schedulePresetToolsSync);
     }
 
+    for (const name of ['PRESET_CHANGED', 'OAI_PRESET_CHANGED_AFTER', 'CHAT_CHANGED']) {
+        on(name, schedulePromptLockEnsure);
+    }
+
     for (const name of ['CHARACTER_PAGE_LOADED', 'CHARACTER_EDITED', 'CHARACTER_DELETED', 'CHARACTER_DUPLICATED', 'CHARACTER_RENAMED', 'CHAT_CHANGED']) {
         on(name, scheduleCharacterRefresh);
     }
@@ -218,6 +224,7 @@ function refreshPresetUI() {
     if (!isOpen(PANELS.preset.panelId)) return;
     ensurePresetTools();
     syncPresetToolsVisibility();
+    ensurePromptLock();
 }
 
 function ensurePresetTools() {
@@ -270,6 +277,99 @@ function syncPresetToolsVisibility() {
     const api = q('main_api')?.value;
     tools.hidden = Boolean(api && api !== 'openai');
     document.body.classList.toggle('cw-dx-preset-tools-hidden', tools.hidden);
+}
+
+function readPromptLockPreference() {
+    if (state.promptLocked !== null) return state.promptLocked;
+
+    let stored = null;
+    try {
+        stored = localStorage.getItem('cw-dx-prompt-lock');
+    } catch {
+        // Storage can be unavailable in restricted browser contexts.
+    }
+
+    if (stored === '1' || stored === '0') {
+        state.promptLocked = stored === '1';
+    } else {
+        state.promptLocked = Boolean(
+            window.matchMedia?.('(pointer: coarse)')?.matches ||
+            (navigator.maxTouchPoints ?? 0) > 0,
+        );
+    }
+
+    return state.promptLocked;
+}
+
+function ensurePromptLock() {
+    const manager = q('completion_prompt_manager');
+    const footer = manager?.querySelector('.completion_prompt_manager_footer');
+    const chain = footer?.querySelector('a.menu_button.fa-chain');
+    if (!footer || !chain) return;
+
+    let lock = q('cw-dx-prompt-lock');
+    if (!lock || lock.parentElement !== footer) {
+        lock?.remove();
+        lock = document.createElement('a');
+        lock.id = 'cw-dx-prompt-lock';
+        lock.className = 'menu_button fa-solid fa-fw interactable cw-dx-prompt-lock';
+        lock.setAttribute('role', 'button');
+        lock.tabIndex = 0;
+
+        const toggle = (event) => {
+            event.preventDefault();
+            state.promptLocked = !readPromptLockPreference();
+            try {
+                localStorage.setItem('cw-dx-prompt-lock', state.promptLocked ? '1' : '0');
+            } catch {
+                // Keep the in-memory preference if storage is unavailable.
+            }
+            applyPromptLock();
+        };
+
+        lock.addEventListener('click', toggle);
+        lock.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') toggle(event);
+        });
+        chain.insertAdjacentElement('afterend', lock);
+    }
+
+    applyPromptLock();
+}
+
+function applyPromptLock() {
+    const manager = q('completion_prompt_manager');
+    const list = q('completion_prompt_manager_list');
+    const lock = q('cw-dx-prompt-lock');
+    if (!manager || !lock) return;
+
+    const locked = readPromptLockPreference();
+    manager.classList.toggle('cw-dx-prompt-locked', locked);
+    lock.classList.toggle('fa-lock', locked);
+    lock.classList.toggle('fa-lock-open', !locked);
+    lock.classList.toggle('is-locked', locked);
+    lock.title = locked ? '解锁提示词排序（允许拖动）' : '锁定提示词排序（防止误拖动）';
+    lock.setAttribute('aria-label', lock.title);
+    lock.setAttribute('aria-pressed', String(locked));
+
+    const $ = globalThis.jQuery;
+    if ($ && list) {
+        try {
+            const sortable = $(list);
+            if (sortable.data('ui-sortable')) {
+                sortable.sortable(locked ? 'disable' : 'enable');
+            }
+        } catch (error) {
+            console.debug('[Discord UI Hybrid] Prompt sortable lock not applied', error);
+        }
+    }
+}
+
+function schedulePromptLockEnsure() {
+    clearTimeout(state.promptLockTimer);
+    state.promptLockTimer = setTimeout(() => {
+        if (isOpen(PANELS.preset.panelId)) ensurePromptLock();
+    }, 80);
 }
 
 /* --------------------------------------------------------------------------
