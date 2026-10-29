@@ -50,6 +50,8 @@ https://github.com/suyi1379-droid/st-discord-ui
 
 `auto_update` 已开启，扩展更新使用 SillyTavern 原生 GitHub 更新流程。
 
+> 同一台酒馆如果已经有本地 junction 副本，再安装 GitHub 版会出现两份扩展；保留一种即可。
+
 > UI 主题不是扩展，不能通过 GitHub URL 直接安装。请单独把主题 JSON 导入「用户设置 → UI 主题」；本扩展会沿用当前主题变量，并提供回退色。
 
 ### 本地/离线安装
