@@ -287,7 +287,9 @@ html body.cw-dx #ai_response_configuration > #cw-dx-preset-left {
     min-height: 0 !important;
     max-height: 100% !important;
     padding: 0 10px 0 0 !important;
+    overflow-x: hidden !important;
     overflow-y: auto !important;
+    align-items: stretch !important;
     align-self: stretch !important;
     scrollbar-width: auto !important;
     scrollbar-color: #4e5058 transparent !important;
@@ -458,11 +460,29 @@ html body.cw-dx #respective-presets-block .standoutHeader > .flex-container {
     font: 600 21.375px/1.3 system-ui, sans-serif !important;
 }
 
+/* Prompt-manager block stays a full-width vertical stack. Native .range-block
+   is a wrapping flex row with space-between, which can strand a wide child at
+   the right edge once the column gets narrow. */
 html body.cw-dx #cw-dx-preset-left > .range-block {
+    display: flex !important;
+    flex: 0 0 auto !important;
+    flex-direction: column !important;
+    flex-wrap: nowrap !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    box-sizing: border-box !important;
     width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
     margin: 0 0 12px !important;
     padding: 0 !important;
-    flex-direction: column !important;
+}
+
+html body.cw-dx #cw-dx-preset-left > .range-block > * {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
 }
 
 /* Logit bias form layout is defined as a grid above. */
@@ -484,8 +504,47 @@ html body.cw-dx #cw-dx-preset-left .toggle-description span {
 }
 
 html body.cw-dx #cw-dx-preset-left #completion_prompt_manager {
-    overflow-x: auto !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: hidden !important;
     font-size: 18.75px !important;
+}
+
+/* Native header/footer are nowrap flex rows. Let them wrap instead of
+   overflowing the column and dragging the whole block sideways. */
+html body.cw-dx #cw-dx-preset-left .completion_prompt_manager_header {
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+    gap: 4px 10px !important;
+    max-width: 100% !important;
+}
+
+html body.cw-dx #cw-dx-preset-left .completion_prompt_manager_header > div {
+    min-width: 0 !important;
+    max-width: 100% !important;
+}
+
+html body.cw-dx #cw-dx-preset-left .completion_prompt_manager_footer {
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    max-width: 100% !important;
+}
+
+html body.cw-dx #cw-dx-preset-left .completion_prompt_manager_footer select {
+    flex: 1 1 100px !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+}
+
+html body.cw-dx #cw-dx-preset-left #completion_prompt_manager_list li {
+    grid-template-columns: minmax(0, 4fr) 80px 58px !important;
+    min-width: 0 !important;
+}
+
+html body.cw-dx #cw-dx-preset-left .completion_prompt_manager_prompt_name {
+    min-width: 0 !important;
 }
 
 #completion_prompt_manager .completion_prompt_manager_footer .cw-dx-prompt-lock {
@@ -1223,7 +1282,7 @@ html body.cw-dx #PersonaManagement .paginationjs-pages ul li a {
    and keep the footer controls on one aligned row. */
 html body.cw-dx #completion_prompt_manager_popup {
     position: fixed !important;
-    top: 50% !important;
+    top: 50dvh !important;
     left: calc(50% + (var(--cw-dx-rail) / 2)) !important;
     right: auto !important;
     bottom: auto !important;

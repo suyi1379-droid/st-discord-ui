@@ -269,6 +269,11 @@ function ensurePresetTools() {
 
     if (biasBlock) tools.append(biasBlock);
     if (promptBlock) tools.append(promptBlock);
+
+    // The column never scrolls sideways now; clear any position left over
+    // from a transient wide layout so the blocks cannot appear shifted right.
+    tools.scrollLeft = 0;
+    promptBlock?.querySelector('#completion_prompt_manager')?.scrollTo({ left: 0 });
 }
 
 function syncPresetToolsVisibility() {
