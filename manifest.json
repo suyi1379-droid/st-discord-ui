@@ -3,10 +3,10 @@
   "loading_order": 90,
   "requires": [],
   "optional": [],
-  "js": "index.js?v=0.1.36",
-  "css": "style.css?v=0.1.36",
+  "js": "index.js?v=0.1.37",
+  "css": "style.css?v=0.1.37",
   "author": "suyi1379-droid",
-  "version": "0.1.36",
+  "version": "0.1.37",
   "homePage": "https://github.com/suyi1379-droid/st-discord-ui",
   "auto_update": true,
   "hooks": {

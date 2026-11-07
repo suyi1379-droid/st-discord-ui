@@ -187,7 +187,7 @@ function bindSillyTavernEvents() {
         if (types[name]) ctx.eventSource.on(types[name], callback);
     };
 
-    for (const name of ['CHATCOMPLETION_SOURCE_CHANGED', 'SETTINGS_LOADED_AFTER']) {
+    for (const name of ['CHATCOMPLETION_SOURCE_CHANGED', 'SETTINGS_LOADED_AFTER', 'PRESET_CHANGED', 'OAI_PRESET_CHANGED_AFTER']) {
         on(name, schedulePresetToolsSync);
     }
 
@@ -264,16 +264,57 @@ function ensurePresetTools() {
         if (child.parentElement !== right) right.append(child);
     }
 
-    const biasBlock = q('logit_bias_openai')?.closest('.range-block');
-    const promptBlock = q('completion_prompt_manager')?.closest('.range-block');
+    // Build the bias group from its own native pieces. On hosted builds the
+    // nearest .range-block can be a shared container that also holds other
+    // extensions, so moving that wrapper drags unrelated UI into the left
+    // column and can strand the prompt manager further down the page.
+    const biasTitle = q('logit_bias_openai');
+    const biasForm = q('openai_logit_bias_preset')?.closest('.openai_logit_bias_preset_form')
+        ?? document.querySelector('.openai_logit_bias_preset_form');
+    const biasDrawer = q('openai_logit_bias_new_entry')?.closest('.inline-drawer');
+    const biasDescription = biasTitle?.nextElementSibling?.classList?.contains('toggle-description')
+        ? biasTitle.nextElementSibling
+        : null;
+    const biasWrapper = biasTitle?.closest('.range-block');
 
-    if (biasBlock) tools.append(biasBlock);
-    if (promptBlock) tools.append(promptBlock);
+    let biasBlock = q('cw-dx-bias-block');
+    if (!biasBlock) {
+        biasBlock = make('div', 'range-block cw-dx-bias-block');
+        biasBlock.id = 'cw-dx-bias-block';
+    }
+    for (const part of [biasTitle, biasDescription, biasForm, biasDrawer]) {
+        if (part && part.parentElement !== biasBlock) biasBlock.append(part);
+    }
+
+    // Same for the prompt manager: move the manager itself into a dedicated
+    // block instead of relocating whatever range-block happens to contain it.
+    const promptManager = q('completion_prompt_manager');
+    const promptWrapper = promptManager?.closest('.range-block');
+
+    let promptBlock = q('cw-dx-prompt-block');
+    if (!promptBlock) {
+        promptBlock = make('div', 'range-block m-b-1 cw-dx-prompt-block');
+        promptBlock.id = 'cw-dx-prompt-block';
+    }
+    if (promptManager && promptManager.parentElement !== promptBlock) {
+        promptBlock.append(promptManager);
+    }
+
+    if (biasBlock.children.length) tools.append(biasBlock);
+    if (promptManager) tools.append(promptBlock);
+
+    // Only drop wrappers that our extraction emptied. Shared containers keep
+    // their remaining children and stay where they are.
+    for (const wrapper of [biasWrapper, promptWrapper]) {
+        if (wrapper && wrapper !== biasBlock && wrapper !== promptBlock && !wrapper.children.length) {
+            wrapper.remove();
+        }
+    }
 
     // The column never scrolls sideways now; clear any position left over
     // from a transient wide layout so the blocks cannot appear shifted right.
     tools.scrollLeft = 0;
-    promptBlock?.querySelector('#completion_prompt_manager')?.scrollTo({ left: 0 });
+    promptManager?.scrollTo?.({ left: 0 });
 }
 
 function syncPresetToolsVisibility() {
