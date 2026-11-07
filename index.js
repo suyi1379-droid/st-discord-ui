@@ -14,6 +14,8 @@ const state = {
     characterPanelOpen: false,
     promptLocked: null,
     promptLockTimer: 0,
+    presetToolsTimer: 0,
+    presetToolsLaterTimer: 0,
 };
 
 const PANELS = {
@@ -201,11 +203,22 @@ function bindSillyTavernEvents() {
 }
 
 function schedulePresetToolsSync() {
-    setTimeout(() => {
-        if (isOpen(PANELS.preset.panelId)) {
+    clearTimeout(state.presetToolsTimer);
+    state.presetToolsTimer = setTimeout(() => {
+        if (!isOpen(PANELS.preset.panelId)) return;
+        ensurePresetTools();
+        syncPresetToolsVisibility();
+        ensurePromptLock();
+
+        // Hosted builds can render the prompt manager after the preset event.
+        // A single later pass catches that without polling.
+        clearTimeout(state.presetToolsLaterTimer);
+        state.presetToolsLaterTimer = setTimeout(() => {
+            if (!isOpen(PANELS.preset.panelId)) return;
             ensurePresetTools();
             syncPresetToolsVisibility();
-        }
+            ensurePromptLock();
+        }, 400);
     }, 60);
 }
 
